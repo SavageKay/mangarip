@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MangaRip — Compile PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --violet:#667eea;--purple:#764ba2;
+  --grad:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  --dark:#0d0d12;--panel:#13131e;--surface:#1a1a2e;
+  --border:rgba(102,126,234,.2);--text:#e8e8f0;--muted:#8888aa;
+  --success:#4ade80;--error:#f87171;--warn:#facc15;
+  --radius:14px;--sidebar:290px;
+}
+[data-theme="light"]{--dark:#f0f0f8;--panel:#fff;--surface:#f4f4fc;--border:rgba(102,126,234,.25);--text:#1a1a2e;--muted:#6666aa;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;transition:background .3s,color .3s;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 70% 50% at 15% 15%,rgba(102,126,234,.07) 0%,transparent 60%),radial-gradient(ellipse 60% 60% at 85% 85%,rgba(118,75,162,.07) 0%,transparent 60%);}
+
+/* ── Header ── */
+header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;padding:.85rem 2rem;border-bottom:1px solid var(--border);background:rgba(13,13,18,.9);backdrop-filter:blur(22px);}
+[data-theme="light"] header{background:rgba(240,240,248,.92);}
+.logo{display:flex;align-items:center;gap:.75rem;text-decoration:none;}
+.logo-icon{width:36px;height:36px;background:var(--grad);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:#fff;box-shadow:0 4px 18px rgba(102,126,234,.4);flex-shrink:0;}
+.logo-text{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:2px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+.logo-sub{font-size:.6rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;}
+.header-right{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+nav{display:flex;gap:.3rem;flex-wrap:wrap;}
+.nav-link{padding:.4rem .9rem;border-radius:8px;font-size:.8rem;font-weight:500;text-decoration:none;color:var(--muted);border:1px solid transparent;transition:all .2s;white-space:nowrap;}
+.nav-link:hover{color:var(--text);border-color:var(--border);}
+.nav-link.active{background:rgba(102,126,234,.12);color:var(--violet);border-color:rgba(102,126,234,.3);}
+.theme-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.theme-btn:hover{border-color:var(--violet);}
+
+/* ── Layout ── */
+main{position:relative;z-index:10;display:grid;grid-template-columns:var(--sidebar) 1fr;gap:1.1rem;max-width:1400px;margin:0 auto;padding:1.4rem 1.25rem;align-items:start;}
+.sidebar{position:sticky;top:4.4rem;display:flex;flex-direction:column;gap:.9rem;max-height:calc(100vh - 5rem);overflow-y:auto;padding-bottom:.5rem;}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;}
+
+/* ── Card ── */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.card-header{padding:.8rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.6rem;}
+.card-icon{width:26px;height:26px;background:var(--grad);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.78rem;flex-shrink:0;}
+.card-title{font-family:'Bebas Neue',sans-serif;font-size:.92rem;letter-spacing:1.5px;}
+.card-body{padding:1.1rem 1.2rem;}
+
+/* ── Dropzone ── */
+.dropzone{border:2px dashed var(--border);border-radius:11px;padding:1.6rem 1rem;text-align:center;cursor:pointer;transition:all .25s;background:var(--surface);position:relative;margin-bottom:.85rem;}
+.dropzone:hover,.dropzone.drag-over{border-color:var(--violet);background:rgba(102,126,234,.06);}
+.dropzone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.dz-icon{font-size:2rem;margin-bottom:.5rem;}
+.dz-title{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:2px;margin-bottom:.25rem;}
+.dz-sub{font-size:.76rem;color:var(--muted);}
+.dz-files{margin-top:.45rem;}
+.dz-fname{font-size:.74rem;color:var(--violet);font-weight:600;line-height:1.7;}
+
+/* ── Form elements ── */
+.field-row{margin-bottom:.8rem;}
+.field-label{display:block;font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem;font-weight:600;}
+.field-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.68rem .85rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.86rem;outline:none;transition:border-color .2s,box-shadow .2s;}
+.field-input:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(102,126,234,.12);}
+.field-input::placeholder{color:var(--muted);}
+
+/* sort */
+.sort-row{display:flex;align-items:center;gap:.4rem;}
+.sort-select{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.45rem .7rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;cursor:pointer;}
+.sort-select:focus{border-color:var(--violet);}
+.sort-dir{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-size:.88rem;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.sort-dir:hover{border-color:var(--violet);color:var(--violet);}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;width:100%;padding:.7rem 1rem;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;letter-spacing:.2px;}
+.btn+.btn{margin-top:.45rem;}
+.btn-success{background:linear-gradient(135deg,#4ade80,#22c55e);color:#071a07;box-shadow:0 4px 15px rgba(74,222,128,.3);}
+.btn-success:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 22px rgba(74,222,128,.45);}
+.btn-success:disabled{opacity:.4;cursor:not-allowed;}
+.btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--violet);color:var(--violet);background:rgba(102,126,234,.06);}
+
+/* ── Progress / status ── */
+.prog-wrap{margin-top:.75rem;display:none;}
+.prog-row{display:flex;justify-content:space-between;font-size:.73rem;color:var(--muted);margin-bottom:.3rem;}
+.prog-bg{height:5px;border-radius:3px;background:var(--surface);overflow:hidden;}
+.prog-fill{height:100%;width:0%;border-radius:3px;background:var(--grad);transition:width .4s ease;}
+.status-wrap{margin-top:.7rem;display:none;}
+.status-badge{display:flex;align-items:center;gap:.5rem;padding:.58rem .85rem;border-radius:8px;font-size:.79rem;font-weight:500;}
+.status-badge.loading{background:rgba(102,126,234,.1);border:1px solid rgba(102,126,234,.3);color:var(--violet);}
+.status-badge.success{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--success);}
+.status-badge.error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--error);}
+.spinner{width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.err-list{margin-top:.5rem;}
+.err-item{font-size:.74rem;color:var(--error);padding:.3rem .5rem;background:rgba(248,113,113,.06);border-radius:5px;margin-bottom:.25rem;border-left:2px solid var(--error);}
+
+/* ── Viewer ── */
+.viewer{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;min-height:520px;}
+.viewer-header{padding:.8rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;}
+.viewer-title{font-family:'Bebas Neue',sans-serif;font-size:.92rem;letter-spacing:1.5px;}
+.img-badge{font-size:.7rem;padding:.22rem .65rem;background:rgba(102,126,234,.12);border:1px solid rgba(102,126,234,.3);border-radius:20px;color:var(--violet);font-weight:600;}
+.viewer-body{padding:1rem;}
+
+.empty-state{text-align:center;padding:5rem 2rem;color:var(--muted);}
+.empty-icon{font-size:3rem;margin-bottom:.85rem;opacity:.3;}
+.empty-title{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--text);opacity:.35;margin-bottom:.3rem;}
+.empty-sub{font-size:.8rem;opacity:.5;}
+
+.count-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem;margin-bottom:.8rem;padding-bottom:.65rem;border-bottom:1px solid var(--border);}
+.count-bar-left{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;}
+.sel-btn{font-size:.76rem;color:var(--violet);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;text-decoration:underline;text-underline-offset:2px;}
+.desel-btn,.invert-btn{color:var(--muted);}
+.sel-count{font-size:.76rem;color:var(--muted);}
+
+.image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.5rem;}
+.img-card{position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;border:2px solid transparent;cursor:pointer;transition:border-color .15s,transform .15s,opacity .15s;background:var(--surface);}
+.img-card:hover{transform:scale(1.03);}
+.img-card.selected{border-color:var(--violet);}
+.img-card.excluded{opacity:.3;}
+.img-card.selected::after{content:'✓';position:absolute;top:4px;right:4px;width:18px;height:18px;background:var(--violet);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.58rem;color:#fff;font-weight:700;}
+.img-card img{width:100%;height:100%;object-fit:cover;display:block;}
+.img-label{position:absolute;bottom:0;left:0;right:0;padding:.25rem .3rem;background:linear-gradient(transparent,rgba(0,0,0,.8));font-size:.6rem;color:rgba(255,255,255,.7);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.img-err{display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:1.4rem;}
+
+/* Download link in sidebar */
+.row-dl-btn{display:inline-flex;align-items:center;gap:.3rem;margin-top:.55rem;padding:.4rem .9rem;background:linear-gradient(135deg,#4ade80,#22c55e);color:#071a07;border-radius:6px;font-size:.77rem;font-weight:700;text-decoration:none;transition:opacity .2s;}
+.row-dl-btn:hover{opacity:.85;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;}
+
+@media(max-width:860px){
+  main{grid-template-columns:1fr;padding:1rem .85rem;}
+  .sidebar{position:static;max-height:none;overflow-y:visible;}
+  header{padding:.7rem 1rem;}
+  .image-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));}
+}
+@media(max-width:480px){
+  .image-grid{grid-template-columns:repeat(auto-fill,minmax(85px,1fr));}
+}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/">
+    <div class="logo-icon">M</div>
+    <div class="logo-wrap">
+      <div class="logo-text">MangaRip</div>
+      <div class="logo-sub">ZIP → PDF Compiler</div>
+    </div>
+  </a>
+  <div class="header-right">
+    <nav>
+      <a class="nav-link" href="/">⬇ Download</a>
+      <a class="nav-link active" href="/compile">📄 Compile</a>
+      <a class="nav-link" href="/convert">📦 Convert</a>
+      <a class="nav-link" href="/renamer">✏️ Renamer</a>
+    </nav>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+  </div>
+</header>
+
+<main>
+  <!-- ── Sidebar ── -->
+  <div class="sidebar">
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📦</div>
+        <div class="card-title">Upload ZIP / MHTML</div>
+      </div>
+      <div class="card-body">
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="zipFile" accept=".zip,.mhtml" multiple onchange="handleFileSelect(this)">
+          <div class="dz-icon">🗜️</div>
+          <div class="dz-title">Drop file(s) here</div>
+          <div class="dz-sub">.zip or .mhtml · click to browse</div>
+          <div class="dz-files" id="dzFiles"></div>
+        </div>
+        <div class="prog-wrap" id="upProgWrap">
+          <div class="prog-row"><span id="upProgText">Uploading…</span><span id="upProgPct">0%</span></div>
+          <div class="prog-bg"><div class="prog-fill" id="upProgFill"></div></div>
+        </div>
+        <div class="status-wrap" id="upStatus">
+          <div class="status-badge" id="upBadge">
+            <div class="spinner" id="upSpinner" style="display:none"></div>
+            <span id="upText"></span>
+          </div>
+        </div>
+        <div class="err-list" id="upErrors"></div>
+      </div>
+    </div>
+
+    <div class="card" id="sortCard" style="display:none">
+      <div class="card-header">
+        <div class="card-icon">🔀</div>
+        <div class="card-title">Page Order</div>
+      </div>
+      <div class="card-body" style="padding-bottom:.85rem">
+        <div class="sort-row">
+          <select class="sort-select" id="sortBy" onchange="applySort()">
+            <option value="filename">Filename</option>
+            <option value="size">File size</option>
+          </select>
+          <button class="sort-dir" id="sortDirBtn" onclick="toggleSortDir()" title="Toggle direction">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📄</div>
+        <div class="card-title">Compile PDF</div>
+      </div>
+      <div class="card-body">
+        <div class="field-row">
+          <label class="field-label">PDF filename</label>
+          <input type="text" class="field-input" id="pdfName" placeholder="My Manga Chapter">
+        </div>
+        <button class="btn btn-success" id="compileBtn" onclick="compilePDF()" disabled>📚 Compile to PDF</button>
+        <button class="btn btn-outline" onclick="selectAll()">☑ Select All Pages</button>
+        <div class="prog-wrap" id="pdfProgWrap">
+          <div class="prog-row"><span id="pdfProgText">Compiling…</span><span id="pdfProgPct">0%</span></div>
+          <div class="prog-bg"><div class="prog-fill" id="pdfProgFill"></div></div>
+        </div>
+        <div class="status-wrap" id="pdfStatus">
+          <div class="status-badge" id="pdfBadge">
+            <div class="spinner" id="pdfSpinner" style="display:none"></div>
+            <span id="pdfText"></span>
+          </div>
+        </div>
+        <div id="pdfDlWrap"></div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- ── Viewer ── -->
+  <div class="viewer">
+    <div class="viewer-header">
+      <div class="viewer-title">📖 Page Preview</div>
+      <div class="img-badge" id="imgBadge">0 pages</div>
+    </div>
+    <div class="viewer-body">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🗜️</div>
+        <div class="empty-title">No File Uploaded</div>
+        <div class="empty-sub">Upload a chapter ZIP or MHTML file to preview and select pages</div>
+      </div>
+      <div id="gridWrap" style="display:none">
+        <div class="count-bar">
+          <div class="count-bar-left">
+            <button class="sel-btn" onclick="selectAll()">Select All</button>
+            <button class="sel-btn desel-btn" onclick="selectNone()">None</button>
+            <button class="sel-btn invert-btn" onclick="invertSel()">Invert</button>
+          </div>
+          <span class="sel-count" id="selCount">0 selected</span>
+        </div>
+        <div class="image-grid" id="imageGrid"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const S = {
+  uploadId: null, images: [], selected: new Set(),
+  pollInterval: null, sortAsc: true,
+};
+
+// ── Theme ────────────────────────────────────────────────────────────────────
+function toggleTheme(){
+  const html=document.documentElement;
+  const dark=html.dataset.theme==='dark';
+  html.dataset.theme=dark?'light':'dark';
+  document.getElementById('themeBtn').textContent=dark?'☀️':'🌙';
+  localStorage.setItem('mgTheme',html.dataset.theme);
+}
+(function(){
+  const t=localStorage.getItem('mgTheme');
+  if(t){document.documentElement.dataset.theme=t;document.getElementById('themeBtn').textContent=t==='dark'?'🌙':'☀️';}
+})();
+
+// ── Drag-drop ────────────────────────────────────────────────────────────────
+const dz=document.getElementById('dropzone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault();dz.classList.remove('drag-over');
+  const files=Array.from(e.dataTransfer.files).filter(f=>f.name.endsWith('.zip')||f.name.endsWith('.mhtml'));
+  if(files.length) uploadZips(files);
+});
+
+function handleFileSelect(input){
+  const files=Array.from(input.files).filter(f=>f.name.endsWith('.zip')||f.name.endsWith('.mhtml'));
+  if(files.length) uploadZips(files);
+}
+
+function uploadZips(files){
+  document.getElementById('dzFiles').innerHTML=files.map(f=>`<div class="dz-fname">📄 ${esc(f.name)}</div>`).join('');
+  showUpProg(true,'Uploading…',10);
+  hideUpStatus();
+  document.getElementById('upErrors').innerHTML='';
+
+  const fd=new FormData();
+  files.forEach(f=>fd.append('files',f));
+
+  let pct=10;
+  const timer=setInterval(()=>{pct=Math.min(pct+4,80);showUpProg(true,'Extracting…',pct);},400);
+
+  fetch('/upload_zip',{method:'POST',body:fd})
+  .then(r=>r.json())
+  .then(data=>{
+    clearInterval(timer);showUpProg(true,'Done',100);setTimeout(()=>showUpProg(false),500);
+    if(data.errors&&data.errors.length)
+      document.getElementById('upErrors').innerHTML=data.errors.map(e=>`<div class="err-item">⚠ ${esc(e)}</div>`).join('');
+    if(!data.images||!data.images.length){showUpStatus('error','No images found.');return;}
+    S.uploadId=data.upload_id;S.images=data.images;S.selected.clear();
+    showUpStatus('success',`✓ ${data.images.length} pages loaded`);
+    document.getElementById('sortCard').style.display='block';
+    applySort();
+  })
+  .catch(e=>{clearInterval(timer);showUpProg(false);showUpStatus('error','✗ '+e.message);});
+}
+
+// ── Sort ─────────────────────────────────────────────────────────────────────
+function toggleSortDir(){
+  S.sortAsc=!S.sortAsc;
+  document.getElementById('sortDirBtn').textContent=S.sortAsc?'↑':'↓';
+  applySort();
+}
+function applySort(){
+  const by=document.getElementById('sortBy').value;
+  S.images.sort((a,b)=>{
+    const va=by==='size'?a.size||0:a.filename.toLowerCase();
+    const vb=by==='size'?b.size||0:b.filename.toLowerCase();
+    return S.sortAsc?(va<vb?-1:va>vb?1:0):(va>vb?-1:va<vb?1:0);
+  });
+  renderGrid();
+}
+
+// ── Grid ─────────────────────────────────────────────────────────────────────
+function renderGrid(){
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('gridWrap').style.display='block';
+  document.getElementById('imgBadge').textContent=S.images.length+' pages';
+  const grid=document.getElementById('imageGrid');
+  grid.innerHTML='';
+  S.images.forEach((img,i)=>{
+    const card=document.createElement('div');
+    card.className='img-card selected';
+    card.dataset.rel=img.rel_path;
+    card.title=img.filename;
+    card.onclick=()=>toggleCard(card,img.rel_path);
+    card.innerHTML=`
+      <img src="${escAttr(img.url)}" loading="lazy" alt="Page ${i+1}"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="img-err">🚫</div>
+      <div class="img-label">Pg ${i+1} · ${esc(img.filename)}</div>`;
+    grid.appendChild(card);
+    S.selected.add(img.rel_path);
+  });
+  updateSelCount();
+}
+
+function toggleCard(card,rel){
+  if(S.selected.has(rel)){S.selected.delete(rel);card.classList.remove('selected');card.classList.add('excluded');}
+  else{S.selected.add(rel);card.classList.add('selected');card.classList.remove('excluded');}
+  updateSelCount();
+}
+function selectAll(){
+  S.images.forEach(img=>S.selected.add(img.rel_path));
+  document.querySelectorAll('.img-card').forEach(c=>{c.classList.add('selected');c.classList.remove('excluded');});
+  updateSelCount();
+}
+function selectNone(){
+  S.selected.clear();
+  document.querySelectorAll('.img-card').forEach(c=>{c.classList.remove('selected');c.classList.add('excluded');});
+  updateSelCount();
+}
+function invertSel(){
+  S.images.forEach(img=>{if(S.selected.has(img.rel_path))S.selected.delete(img.rel_path);else S.selected.add(img.rel_path);});
+  document.querySelectorAll('.img-card').forEach(c=>{
+    const has=S.selected.has(c.dataset.rel);
+    c.classList.toggle('selected',has);c.classList.toggle('excluded',!has);
+  });
+  updateSelCount();
+}
+function updateSelCount(){
+  const n=S.selected.size;
+  document.getElementById('selCount').textContent=n+' selected';
+  document.getElementById('compileBtn').disabled=n===0;
+}
+
+// ── Compile ──────────────────────────────────────────────────────────────────
+function compilePDF(){
+  const pdfName=document.getElementById('pdfName').value.trim()||'chapter';
+  const relPaths=S.images.map(img=>img.rel_path).filter(rp=>S.selected.has(rp));
+  if(!relPaths.length) return;
+
+  document.getElementById('compileBtn').disabled=true;
+  document.getElementById('pdfDlWrap').innerHTML='';
+  showPdfProg(true,'Starting…',0);
+  hidePdfStatus();
+
+  fetch('/compile_pdf',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({upload_id:S.uploadId,rel_paths:relPaths,pdf_name:pdfName}),
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    if(data.error){showPdfProg(false);showPdfStatus('error','✗ '+data.error);document.getElementById('compileBtn').disabled=false;return;}
+    pollPdf(data.job_id);
+  })
+  .catch(e=>{showPdfProg(false);showPdfStatus('error','✗ '+e.message);document.getElementById('compileBtn').disabled=false;});
+}
+
+function pollPdf(jobId){
+  if(S.pollInterval) clearInterval(S.pollInterval);
+  S.pollInterval=setInterval(()=>{
+    fetch('/job/'+jobId).then(r=>r.json()).then(job=>{
+      showPdfProg(true,job.progress||'Working…',job.pct||0);
+      if(job.status==='pdf_ready'){
+        clearInterval(S.pollInterval);
+        showPdfProg(true,'✓ Done!',100);
+        setTimeout(()=>showPdfProg(false),700);
+        showPdfStatus('success','✓ PDF compiled!');
+        document.getElementById('compileBtn').disabled=false;
+        document.getElementById('pdfDlWrap').innerHTML=
+          `<a class="row-dl-btn" href="/download_pdf/${jobId}" download="${esc(job.pdf_name||'chapter.pdf')}">⬇ Download PDF</a>`;
+      } else if(job.status==='error'){
+        clearInterval(S.pollInterval);
+        showPdfProg(false);
+        showPdfStatus('error','✗ '+job.progress);
+        document.getElementById('compileBtn').disabled=false;
+      }
+    }).catch(()=>{});
+  },1200);
+}
+
+// ── Progress / status helpers ─────────────────────────────────────────────────
+function showUpProg(show,text,pct){
+  document.getElementById('upProgWrap').style.display=show?'block':'none';
+  if(show){
+    document.getElementById('upProgText').textContent=text;
+    document.getElementById('upProgPct').textContent=pct+'%';
+    document.getElementById('upProgFill').style.width=pct+'%';
+  }
+}
+function hideUpStatus(){document.getElementById('upStatus').style.display='none';}
+function showUpStatus(cls,text){
+  document.getElementById('upStatus').style.display='block';
+  document.getElementById('upBadge').className='status-badge '+cls;
+  document.getElementById('upText').textContent=text;
+  document.getElementById('upSpinner').style.display=cls==='loading'?'block':'none';
+}
+function showPdfProg(show,text,pct){
+  document.getElementById('pdfProgWrap').style.display=show?'block':'none';
+  if(show){
+    document.getElementById('pdfProgText').textContent=text;
+    document.getElementById('pdfProgPct').textContent=Math.min(pct,100)+'%';
+    document.getElementById('pdfProgFill').style.width=Math.min(pct,100)+'%';
+  }
+}
+function hidePdfStatus(){document.getElementById('pdfStatus').style.display='none';}
+function showPdfStatus(cls,text){
+  document.getElementById('pdfStatus').style.display='block';
+  document.getElementById('pdfBadge').className='status-badge '+cls;
+  document.getElementById('pdfText').textContent=text;
+  document.getElementById('pdfSpinner').style.display=cls==='loading'?'block':'none';
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escAttr(s){return esc(s);}
+</script>
+</body>
+</html>
